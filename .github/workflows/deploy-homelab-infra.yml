@@ -16,10 +16,6 @@ jobs:
       - name: Code checkout
         uses: actions/checkout@v4
 
-      - name: Install Ansible 
-        run: |
-          python3 -m pip install ansible
-
       - name: Creates SSH key
         run: |
           mkdir -p ~/.ssh
