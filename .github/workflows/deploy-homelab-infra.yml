@@ -22,6 +22,13 @@ jobs:
           echo "${{ secrets.TARGET_VM_SSH_PRIVATE_KEY }}" > ~/.ssh/homelab_k8s
           chmod 600 ~/.ssh/homelab_k8s
         
+      - name: Test SSH connection
+        run: |
+          ssh -vvv \
+            -i ~/.ssh/homelab_k8s \
+            -o StrictHostKeyChecking=no \
+            $ANSIBLE_USER@$ANSIBLE_HOST "echo SSH OK"
+
       - name: Play ansible play-books
         run: |
           cd homelab-infra
