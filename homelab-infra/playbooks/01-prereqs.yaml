@@ -1,0 +1,26 @@
+---
+- name: Prepare base system
+  hosts: k8s_nodes
+  become: true
+  tasks:
+    - name: Update chache API
+      apt:
+        update_cache: yes
+
+    - name: Install dependicies
+      apt:
+        name:
+          - curl
+          - open-iscsi
+          - apt-transport-https
+        state: present
+
+    - name: Disable swap
+      command: swapoff -a
+
+    - name: Remove swap from fstab
+      lineinfile:
+        path: /etc/fstab
+        regexp: '^([^#].*\sswap\s.*)$'
+        line: '# \1'
+        backrefs: yes

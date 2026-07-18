@@ -1,0 +1,26 @@
+---
+- name: Downloads k3s installer
+  get_url:
+    url: https://get.k3s.io
+    dest: /tmp/k3s-install.sh
+    mode: '0755'
+
+- name: Installs k3s
+  command: /tmp/k3s-install.sh
+  environment:
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
+    INSTALL_K3S_EXEC: "server --disable traefik --disable servicelb"
+  args:
+    creates: /usr/local/bin/k3s
+
+- name: Waits k3s stay ready
+  wait_for:
+    path: /etc/rancher/k3s/k3s.yaml
+    state: present
+    timeout: 120
+
+- name: Searchs node kubeconfig 
+  fetch:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: ./kubeconfig/homelab.yaml
+    flat: yes
