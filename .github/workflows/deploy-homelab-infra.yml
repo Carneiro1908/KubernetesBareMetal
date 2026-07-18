@@ -28,4 +28,15 @@ jobs:
         
       - name: Play ansible play-books
         run: |
-          ansible-playbook homelab-infra/playbooks/site.yml
+          cd homelab-infra
+          ansible-playbook playbooks/site.yml
+
+      - name:  Check k3s nodes
+        run: |
+          sleep 120
+          export KUBECONFIG=~/homelab-infra/kubeconfig/homelab.yaml
+
+          sed -i 's/127.0.0.1/${ env.ANSIBLE_HOST }/' kubeconfig/homelab.yaml
+
+          # ajuste o IP dentro do kubeconfig, ele vem como 127.0.0.1 por padrão
+          kubectl get nodes
