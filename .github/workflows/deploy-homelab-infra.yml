@@ -1,0 +1,31 @@
+name: Deploy homelab infrastructure
+
+on: 
+  workflow_call:
+
+
+jobs:
+  deploy_homelab_infrastructure:
+    runs-on: ubuntu-latest
+
+    env:
+      ANSIBLE_HOST: ${{ secrets.ANSIBLE_HOST }}
+      ANSIBLE_USER: ${{ secrets.ANSIBLE_USER }}
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v4
+
+      - name: Install Ansible 
+        run: |
+          python3 -m pip install ansible
+
+      - name: Creates SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.TARGET_VM_SSH_PRIVATE_KEY }}" > ~/.ssh/homelab_k8s
+          chmod 600 ~/.ssh/homelab_k8s
+        
+      - name: Play ansible play-books
+        run: |
+          ansible-playbook homelab-infra/playbooks/site.yml
