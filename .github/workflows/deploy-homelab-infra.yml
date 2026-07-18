@@ -28,11 +28,6 @@ jobs:
         
       - name: Play ansible play-books
         run: |
-
-          # debug ANSIBLE_HOST before ansible-playbook
-          echo "ANSIBLE_HOST='${ANSIBLE_HOST}'"
-          env | grep ANSIBLE_HOST || true
-
           cd homelab-infra
           ANSIBLE_HOST="${ANSIBLE_HOST}" ansible-playbook -vvv playbooks/site.yml
 
