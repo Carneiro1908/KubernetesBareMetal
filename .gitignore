@@ -1,3 +1,6 @@
 kubeconfig/
 *.retry
 .vault_pass
+
+# Real inventory is generated dynamically by CI; never commit real host data
+inventory/hosts.yml.real

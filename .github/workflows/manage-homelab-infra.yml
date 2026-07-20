@@ -1,16 +1,21 @@
 name: Manage homelab infrastructure
 
-on: 
+on:
   workflow_dispatch:
-    inputs: 
+    inputs:
       k3s_action:
-        description: the action in the k3s, destroy or apply
+        description: "The action to run against the cluster"
         required: true
-        default: ''
-        type: choice  
+        default: 'apply'
+        type: choice
         options:
           - apply
           - destroy
+      debug:
+        description: "Run extra diagnostic checks (inventory bytes, ansible ping -vvv)"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   deploy_homelab_infrastructure:
@@ -19,18 +24,16 @@ jobs:
     env:
       ANSIBLE_HOST: ${{ secrets.ANSIBLE_HOST }}
       ANSIBLE_USER: ${{ secrets.ANSIBLE_USER }}
-      USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
-      SSH_PRIVATE_KEY: ${{ secrets.TARGET_VM_SSH_PRIVATE_KEY }}
 
     steps:
       - name: Code checkout
         uses: actions/checkout@v4
-        with: 
+        with:
           # Prevent Git on Windows from converting LF to CRLF on checkout,
           # which corrupts YAML files (e.g. inventory) once copied to Linux
           autocrlf: input
 
-      - name: Creates SSH key
+      - name: Create SSH key
         run: |
           mkdir -p ~/.ssh
 
@@ -40,31 +43,67 @@ jobs:
 
           chmod 600 ~/.ssh/github_actions_ssh_key
 
+          # Sanity check: confirms the key was written correctly and is a valid key
           ssh-keygen -lf ~/.ssh/github_actions_ssh_key
 
-      - name: Installing Rsync 
+      - name: Installing Rsync
+        # No password prompt needed: sudoers is scoped to allow only this
+        # specific apt-get command without a prompt, restricted to this user.
+        # See /etc/sudoers.d/github-actions-runner on the runner machine.
         run: |
-          echo "$USER_PASSWORD" | sudo -S apt-get update
-          echo "$USER_PASSWORD" | sudo -S apt-get install -y rsync
+          sudo apt-get update
+          sudo apt-get install -y rsync
 
       - name: Sending homelab-infra to the target VM
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 10
-          max_attempts: 10       
-          retry_wait_seconds: 5 
+          max_attempts: 10
+          retry_wait_seconds: 5
           command: |
-            rsync -avzP -e "ssh -i ~/.ssh/github_actions_ssh_key" ./homelab-infra "$ANSIBLE_USER@$ANSIBLE_HOST":HomeLabK8sProjectFiles
+            rsync -avzP -e "ssh -i ~/.ssh/github_actions_ssh_key -o StrictHostKeyChecking=no" \
+              ./homelab-infra "$ANSIBLE_USER@$ANSIBLE_HOST":HomeLabK8sProjectFiles
 
-      - name: Debug inventory file for hidden characters
+      - name: Render inventory with real values (resolved remotely, inside WSL)
+        run: |
+          # ANSIBLE_HOST comes from the runner's secrets and must be expanded
+          # HERE (unquoted heredoc), before sending the script over SSH.
+          # Everything else that must be resolved on the REMOTE (WSL) side —
+          # like $(whoami) and $HOME, which give the real Linux user and home
+          # path inside WSL — is escaped with a backslash so it survives the
+          # trip and only gets evaluated once it lands on the remote shell.
+          ssh -i ~/.ssh/github_actions_ssh_key \
+            -o StrictHostKeyChecking=no \
+            "$ANSIBLE_USER@$ANSIBLE_HOST" wsl bash << EOF_SSH
+            set -euo pipefail
+            cd ./HomeLabK8sProjectFiles/homelab-infra
+
+            cat > inventory/hosts.yml << INNER_EOF
+          all:
+            children:
+              k8s_nodes:
+                hosts:
+                  homelab-server:
+                    ansible_host: "$ANSIBLE_HOST"
+                    ansible_user: "\$(whoami)"
+                    ansible_ssh_private_key_file: "\$HOME/.ssh/homelab_k8s"
+          INNER_EOF
+
+            echo "=== Generated inventory (sanity check) ==="
+            cat inventory/hosts.yml
+          EOF_SSH
+
+      - name: Debug inventory and connectivity (optional)
+        if: ${{ inputs.debug == true }}
         run: |
           ssh -i ~/.ssh/github_actions_ssh_key \
             -o StrictHostKeyChecking=no \
             "$ANSIBLE_USER@$ANSIBLE_HOST" wsl bash << 'EOF_SSH'
+            set -euo pipefail
             cd ./HomeLabK8sProjectFiles/homelab-infra
 
-            echo "=== Raw bytes check (look for 0d = CR) ==="
-            xxd inventory/hosts.yml | grep -m 5 "0d 0a"
+            echo "=== Raw bytes check (look for 0d = CR, would mean CRLF) ==="
+            xxd inventory/hosts.yml | grep "0d 0a" || echo "No CRLF found (good)"
 
             echo "=== Visual check for ^M (CRLF marker) ==="
             cat -A inventory/hosts.yml
@@ -80,19 +119,18 @@ jobs:
         run: |
           ssh -i ~/.ssh/github_actions_ssh_key \
             -o StrictHostKeyChecking=no \
-            "$ANSIBLE_USER@$ANSIBLE_HOST" wsl bash << 'EOF_SSH'
-            
+            "$ANSIBLE_USER@$ANSIBLE_HOST" wsl bash << EOF_SSH
+            set -euo pipefail
+
             echo "SSH OK. Inside WSL directly..."
-            
             cd ./HomeLabK8sProjectFiles/homelab-infra
 
-            # 1. Defining the variable without spaces
-            PLAYBOOK=""
-
-            # 2. Fetching the GitHub Actions input
+            # ACTION comes from the workflow_dispatch input, safe to expand
+            # here (GitHub Actions substitutes it at workflow parse time,
+            # before this script is even built).
             ACTION="${{ github.event.inputs.k3s_action }}"
 
-            case "$ACTION" in 
+            case "\$ACTION" in
               "apply")
                 PLAYBOOK="apply.yml"
                 ;;
@@ -100,36 +138,48 @@ jobs:
                 PLAYBOOK="destroy.yml"
                 ;;
               *)
-                echo "Invalid action: $ACTION"
+                echo "Invalid action: \$ACTION"
                 exit 1
                 ;;
             esac
 
-            echo "Selected playbook: $PLAYBOOK"
+            echo "Selected playbook: \$PLAYBOOK"
 
-            # 3. Running the simulation (Check Mode)
-            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK --check
+            # 1. Dry-run first (Check Mode) to catch errors before touching anything
+            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/\$PLAYBOOK --check
 
-            # 4. Applying the actual effects
-            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK 
+            # 2. Apply for real
+            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/\$PLAYBOOK
 
-            echo "Waiting for cluster initialization..."
-            sleep 120
+            # 3. Only wait for / validate the cluster on "apply" — on
+            # "destroy" there is no cluster left to check
+            if [ "\$ACTION" = "apply" ]; then
+              echo "Waiting for cluster initialization..."
+              sleep 120
 
-            # 5. Checking k3s state
-            export KUBECONFIG="$HOME/kubeconfig/homelab.yaml"
-            
-            # Replacing the loopback IP with the actual host IP safely using double quotes
-            sed -i "s/127.0.0.1/${ANSIBLE_HOST}/" "$KUBECONFIG"
-            
-            echo "Checking cluster nodes status..."
-            kubectl get nodes
+              export KUBECONFIG="\$HOME/kubeconfig/homelab.yaml"
+              sed -i "s/127.0.0.1/$ANSIBLE_HOST/" "\$KUBECONFIG"
 
-            # 6. Removing the directory to prevent leak 
+              echo "Checking cluster nodes status..."
+              kubectl get nodes
+            else
+              echo "Destroy complete, skipping cluster validation."
+            fi
+
+            # 4. Remove the project directory from the target VM to avoid leaking
+            # infrastructure code / rendered inventory on the remote filesystem
             cd ..
-            rm -rf homelab-infra
+            rm -rf HomeLabK8sProjectFiles
           EOF_SSH
 
       - name: Uninstalling Rsync
+        if: always()
         run: |
-          echo "$USER_PASSWORD" | sudo -S apt-get remove -y rsync
+          sudo apt-get remove -y rsync
+
+      - name: Clean up local SSH key
+        if: always()
+        run: |
+          # Never leave the private key lying around on the runner's disk
+          # after the job finishes, regardless of success or failure
+          rm -f ~/.ssh/github_actions_ssh_key
