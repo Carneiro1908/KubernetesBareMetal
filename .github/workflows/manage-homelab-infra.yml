@@ -47,7 +47,7 @@ jobs:
 
       - name: Installing Rsync 
         run: |
-          sudo apt-get update && apt-get install -y rsync
+          apt-get update && apt-get install -y rsync
 
       - name: Sending homelab-infra to the target VM
         uses: nick-fields/retry@v3
@@ -114,4 +114,4 @@ jobs:
 
       - name: Uninstalling Rsync
         run: |
-          sudo apt uninstall rsync -y
+          apt-get update && apt-get remove -y rsync
