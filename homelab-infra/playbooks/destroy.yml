@@ -1,0 +1,20 @@
+---
+- name: Revert cluster provisioning
+  hosts: k8s_nodes
+  become: true
+  tasks:
+    - name: Uninstall k3s
+      import_role:
+        name: k3s
+        tasks_from: uninstall
+
+    - name: Renable swap on fstab
+      lineinfile:
+        path: /etc/fstab
+        regexp: '^# (.*\sswap\s.*)$'
+        line: '\1'
+        backrefs: yes
+
+    - name: Renable swap
+      command: swapon -a
+      ignore_errors: true  # can fail if has no swap partition/file configured

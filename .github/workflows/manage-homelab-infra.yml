@@ -1,0 +1,112 @@
+name: Manage homelab infrastructure
+
+on: 
+  workflow_dispatch:
+    inputs: 
+      k3s_action:
+        description: the action in the k3s, destroy or apply
+        required: true
+        default: ''
+        type: choice  
+        options:
+          - apply
+          - destroy
+
+jobs:
+  deploy_homelab_infrastructure:
+    runs-on: self-hosted
+
+    env:
+      ANSIBLE_HOST: ${{ secrets.ANSIBLE_HOST }}
+      ANSIBLE_USER: ${{ secrets.ANSIBLE_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.TARGET_VM_SSH_PRIVATE_KEY }}
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v4
+
+      - name: Creates SSH key
+        run: |
+          mkdir -p ~/.ssh
+
+          cat > ~/.ssh/github_actions_ssh_key << 'EOF'
+          ${{ secrets.TARGET_VM_SSH_PRIVATE_KEY }}
+          EOF
+
+          chmod 600 ~/.ssh/github_actions_ssh_key
+
+          ssh-keygen -lf ~/.ssh/github_actions_ssh_key
+        
+      - name: Test SSH connection
+        run: |
+          ssh \
+          -i ~/.ssh/github_actions_ssh_key \
+          -o StrictHostKeyChecking=no \
+          "$ANSIBLE_USER@$ANSIBLE_HOST" \
+          "echo SSH OK"
+
+      - name: Installing Rsync 
+        run: |
+          sudo apt install rsync -y
+
+      - name: Sending homelab-infra to the target VM
+        run: |
+          rsync -avzP -e "ssh -i ~/.ssh/github_actions_ssh_key" ./homelab-infra "$ANSIBLE_USER@$ANSIBLE_HOST":HomeLabK8sProjectFiles
+
+      - name: Execute Ansible Playbook via SSH and WSL
+        run: |
+          ssh -i ~/.ssh/github_actions_ssh_key \
+            -o StrictHostKeyChecking=no \
+            "$ANSIBLE_USER@$ANSIBLE_HOST" << 'EOF_SSH'
+            
+            echo "SSH OK. Entering WSL..."
+            
+            wsl bash -c '
+              cd ./HomeLabK8sProjectFiles/homelab-infra
+
+              # 1. Defining the variable without spaces
+              PLAYBOOK=""
+
+              # 2. Fetching the GitHub Actions input
+              ACTION="${{ github.event.inputs.k3s_action }}"
+
+              case "$ACTION" in 
+                "apply")
+                  PLAYBOOK="apply.yml"
+                  ;;
+                "destroy")
+                  PLAYBOOK="destroy.yml"
+                  ;;
+                *)
+                  echo "Invalid action: $ACTION"
+                  exit 1
+                  ;;
+              esac
+
+              echo "Selected playbook: $PLAYBOOK"
+
+              # 3. Running the simulation (Check Mode)
+              ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK --check
+
+              # 4. Applying the actual effects
+              ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK 
+
+              # Removing the directory to prevent leak 
+              cd ..
+              rm -rf homelab-infra
+            '
+          EOF_SSH
+
+      - name:  Check k3s nodes
+        run: |
+          sleep 120
+
+          export KUBECONFIG=~/homelab-infra/kubeconfig/homelab.yaml
+
+          sed -i 's/127.0.0.1/${ env.ANSIBLE_HOST }/' kubeconfig/homelab.yaml
+          
+          kubectl get nodes
+
+      - name: Uninstalling Rsync
+        run: |
+          sudo apt uninstall rsync -y

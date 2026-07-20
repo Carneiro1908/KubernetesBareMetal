@@ -1,0 +1,25 @@
+---
+- name: Verify if the uninstalling script of k3s exists
+  stat:
+    path: /usr/local/bin/k3s-uninstall.sh
+  register: k3s_uninstall_script
+
+- name: Run oficial uninstaller of k3s
+  command: /usr/local/bin/k3s-uninstall.sh
+  when: k3s_uninstall_script.stat.exists
+
+- name: Remove local kubeconfig (if exists)
+  file:
+    path: ./kubeconfig/homelab.yaml
+    state: absent
+  delegate_to: localhost
+  become: false
+
+- name: Clear trash directories of k3s
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/rancher/k3s
+    - /var/lib/rancher/k3s
+    - /var/lib/kubelet
