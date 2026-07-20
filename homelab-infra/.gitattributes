@@ -1,0 +1,3 @@
+# Force LF line endings regardless of OS, to avoid corruption when files
+# move between Windows runners and Linux targets
+* text=auto eol=lf
