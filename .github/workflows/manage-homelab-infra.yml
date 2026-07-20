@@ -112,13 +112,13 @@ jobs:
             echo "Selected playbook: $PLAYBOOK"
 
             ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml "playbooks/${PLAYBOOK}" \
-              --extra-vars "ansible_become_password=$REMOTE_SUDO_PASSWORD" \
+              --extra-vars "ansible_become_pass=$REMOTE_SUDO_PASSWORD" \
               --extra-vars "ansible_become_method=sudo" \
               --extra-vars "ansible_become_user=root" \
               --check
 
             ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml "playbooks/${PLAYBOOK}" \
-              --extra-vars "ansible_become_password=$REMOTE_SUDO_PASSWORD" \
+              --extra-vars "ansible_become_pass=$REMOTE_SUDO_PASSWORD" \
               --extra-vars "ansible_become_method=sudo" \
               --extra-vars "ansible_become_user=root"
 
