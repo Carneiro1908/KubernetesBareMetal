@@ -20,13 +20,22 @@ jobs:
       - name: Creates SSH key
         run: |
           mkdir -p ~/.ssh
-          touch ~/.ssh/homelab_k8s
-          echo $SSH_PRIVATE_KEY > ~/.ssh/homelab_k8s
+
+          cat > ~/.ssh/homelab_k8s << 'EOF'
+          ${{ secrets.TARGET_VM_SSH_PRIVATE_KEY }}
+          EOF
+
           chmod 600 ~/.ssh/homelab_k8s
+
+          ssh-keygen -lf ~/.ssh/homelab_k8s
         
       - name: Test SSH connection
         run: |
-          ssh -i ~/.ssh/homelab_k8s $ANSIBLE_USER@$ANSIBLE_HOST 
+          ssh \
+          -i ~/.ssh/homelab_k8s \
+          -o StrictHostKeyChecking=no \
+          "$ANSIBLE_USER@$ANSIBLE_HOST" \
+          "echo SSH OK"
 
       - name: Play ansible play-books
         run: |
