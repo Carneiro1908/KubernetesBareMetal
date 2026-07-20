@@ -64,56 +64,54 @@ jobs:
         run: |
           ssh -i ~/.ssh/github_actions_ssh_key \
             -o StrictHostKeyChecking=no \
-            "$ANSIBLE_USER@$ANSIBLE_HOST" << 'EOF_SSH'
+            "$ANSIBLE_USER@$ANSIBLE_HOST" wsl bash << 'EOF_SSH'
             
-            echo "SSH OK. Entering WSL..."
+            echo "SSH OK. Inside WSL directly..."
             
-            wsl bash << 'EOF_WSL'
-              cd ./HomeLabK8sProjectFiles/homelab-infra
+            cd ./HomeLabK8sProjectFiles/homelab-infra
 
-              # 1. Defining the variable without spaces
-              PLAYBOOK=""
+            # 1. Defining the variable without spaces
+            PLAYBOOK=""
 
-              # 2. Fetching the GitHub Actions input
-              ACTION="${{ github.event.inputs.k3s_action }}"
+            # 2. Fetching the GitHub Actions input
+            ACTION="${{ github.event.inputs.k3s_action }}"
 
-              case "$ACTION" in 
-                "apply")
-                  PLAYBOOK="apply.yml"
-                  ;;
-                "destroy")
-                  PLAYBOOK="destroy.yml"
-                  ;;
-                *)
-                  echo "Invalid action: $ACTION"
-                  exit 1
-                  ;;
-              esac
+            case "$ACTION" in 
+              "apply")
+                PLAYBOOK="apply.yml"
+                ;;
+              "destroy")
+                PLAYBOOK="destroy.yml"
+                ;;
+              *)
+                echo "Invalid action: $ACTION"
+                exit 1
+                ;;
+            esac
 
-              echo "Selected playbook: $PLAYBOOK"
+            echo "Selected playbook: $PLAYBOOK"
 
-              # 3. Running the simulation (Check Mode)
-              ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK --check
+            # 3. Running the simulation (Check Mode)
+            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK --check
 
-              # 4. Applying the actual effects
-              ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK 
+            # 4. Applying the actual effects
+            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK 
 
-              echo "Waiting for cluster initialization..."
-              sleep 120
+            echo "Waiting for cluster initialization..."
+            sleep 120
 
-              # 5. Checking k3s state
-              export KUBECONFIG="$HOME/kubeconfig/homelab.yaml"
-              
-              # Replacing the loopback IP with the actual host IP safely using double quotes
-              sed -i "s/127.0.0.1/${ANSIBLE_HOST}/" "$KUBECONFIG"
-              
-              echo "Checking cluster nodes status..."
-              kubectl get nodes
+            # 5. Checking k3s state
+            export KUBECONFIG="$HOME/kubeconfig/homelab.yaml"
+            
+            # Replacing the loopback IP with the actual host IP safely using double quotes
+            sed -i "s/127.0.0.1/${ANSIBLE_HOST}/" "$KUBECONFIG"
+            
+            echo "Checking cluster nodes status..."
+            kubectl get nodes
 
-              # 6. Removing the directory to prevent leak 
-              cd ..
-              rm -rf homelab-infra
-            EOF_WSL
+            # 6. Removing the directory to prevent leak 
+            cd ..
+            rm -rf homelab-infra
           EOF_SSH
 
       - name: Uninstalling Rsync
