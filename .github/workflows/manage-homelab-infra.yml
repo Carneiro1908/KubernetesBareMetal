@@ -50,8 +50,13 @@ jobs:
           sudo apt install rsync -y
 
       - name: Sending homelab-infra to the target VM
-        run: |
-          rsync -avzP -e "ssh -i ~/.ssh/github_actions_ssh_key" ./homelab-infra "$ANSIBLE_USER@$ANSIBLE_HOST":HomeLabK8sProjectFiles
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 10       
+          retry_wait_seconds: 10 
+          command: |
+            rsync -avzP -e "ssh -i ~/.ssh/github_actions_ssh_key" ./homelab-infra "$ANSIBLE_USER@$ANSIBLE_HOST":HomeLabK8sProjectFiles
 
       - name: Execute Ansible Playbook via SSH and WSL
         run: |
