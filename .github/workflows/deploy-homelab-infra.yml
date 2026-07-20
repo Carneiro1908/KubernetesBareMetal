@@ -26,7 +26,6 @@ jobs:
         
       - name: Test SSH connection
         run: |
-          cat ~/.ssh/homelab_k8s 
           ssh -i ~/.ssh/homelab_k8s $ANSIBLE_USER@$ANSIBLE_HOST 
 
       - name: Play ansible play-books
