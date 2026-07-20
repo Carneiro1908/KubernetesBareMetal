@@ -24,7 +24,6 @@ jobs:
     env:
       ANSIBLE_HOST: ${{ secrets.ANSIBLE_HOST }}
       ANSIBLE_USER: ${{ secrets.ANSIBLE_USER }}
-      REMOTE_SUDO_PASSWORD: ${{ secrets.REMOTE_SUDO_PASSWORD }}
 
     steps:
       - name: Code checkout
@@ -91,9 +90,10 @@ jobs:
             echo "SSH OK. Inside WSL directly..."
             cd ./HomeLabK8sProjectFiles/homelab-infra
 
-            # ACTION comes from the workflow_dispatch input, safe to expand
-            # here (GitHub Actions substitutes it at workflow parse time,
-            # before this script is even built).
+
+            REMOTE_SUDO_PASSWORD=${{ secrets.REMOTE_SUDO_PASSWORD }}
+
+            
             ACTION="${{ github.event.inputs.k3s_action }}"
 
             case "$ACTION" in
