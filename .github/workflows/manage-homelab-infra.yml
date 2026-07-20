@@ -82,19 +82,19 @@ jobs:
 
       - name: Execute Ansible Playbook via SSH and WSL
         run: |
-          REMOTE_SUDO_PASSWORD="$REMOTE_SUDO_PASSWORD" ssh -i ~/.ssh/github_actions_ssh_key \
+          # 1. Comando SSH limpo
+          ssh -i ~/.ssh/github_actions_ssh_key \
             -o StrictHostKeyChecking=no \
-            "$ANSIBLE_USER@$ANSIBLE_HOST" wsl bash <<'EOF_SSH'
+            "${{ env.ANSIBLE_USER }}@${{ env.ANSIBLE_HOST }}" wsl bash <<'EOF_SSH'
             set -euo pipefail
 
             echo "SSH OK. Inside WSL directly..."
             cd ./HomeLabK8sProjectFiles/homelab-infra
 
-
-            REMOTE_SUDO_PASSWORD=${{ secrets.REMOTE_SUDO_PASSWORD }}
-
-            
+            # 2. Injetando valores do GitHub diretamente com aspas seguras
+            REMOTE_SUDO_PASSWORD="${{ secrets.REMOTE_SUDO_PASSWORD }}"
             ACTION="${{ github.event.inputs.k3s_action }}"
+            TARGET_IP="${{ env.ANSIBLE_HOST }}"
 
             case "$ACTION" in
               "apply")
@@ -122,14 +122,14 @@ jobs:
               --extra-vars "ansible_become_method=sudo" \
               --extra-vars "ansible_become_user=root"
 
-            # 3. Only wait for / validate the cluster on "apply" — on
-            # "destroy" there is no cluster left to check
+            # 3. Only wait for / validate the cluster on "apply"
             if [ "$ACTION" = "apply" ]; then
               echo "Waiting for cluster initialization..."
               sleep 120
 
               export KUBECONFIG="$HOME/kubeconfig/homelab.yaml"
-              sed -i "s/127.0.0.1/$ANSIBLE_HOST/" "$KUBECONFIG"
+              # Substituindo pelo IP alvo de forma segura
+              sed -i "s/127.0.0.1/$TARGET_IP/" "$KUBECONFIG"
 
               echo "Checking cluster nodes status..."
               kubectl get nodes
@@ -137,16 +137,10 @@ jobs:
               echo "Destroy complete, skipping cluster validation."
             fi
 
-            # 4. Remove the project directory from the target VM to avoid leaking
-            # infrastructure code / rendered inventory on the remote filesystem
-            cd ..
+            # 4. Remove the project directory safely (Voltando para a raiz)
+            cd ~
             rm -rf HomeLabK8sProjectFiles
           EOF_SSH
-
-      - name: Uninstalling Rsync
-        if: always()
-        run: |
-          sudo apt-get remove -y rsync
 
       - name: Clean up local SSH key
         if: always()
