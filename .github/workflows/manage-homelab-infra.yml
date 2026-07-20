@@ -19,6 +19,7 @@ jobs:
     env:
       ANSIBLE_HOST: ${{ secrets.ANSIBLE_HOST }}
       ANSIBLE_USER: ${{ secrets.ANSIBLE_USER }}
+      USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
       SSH_PRIVATE_KEY: ${{ secrets.TARGET_VM_SSH_PRIVATE_KEY }}
 
     steps:
@@ -47,7 +48,8 @@ jobs:
 
       - name: Installing Rsync 
         run: |
-          apt-get update && apt-get install -y rsync
+          echo "$USER_PASSWORD" | sudo -S apt-get update
+          echo "$USER_PASSWORD" | sudo -S apt-get install -y rsync
 
       - name: Sending homelab-infra to the target VM
         uses: nick-fields/retry@v3
@@ -114,4 +116,4 @@ jobs:
 
       - name: Uninstalling Rsync
         run: |
-          apt-get update && apt-get remove -y rsync
+          echo "$USER_PASSWORD" | sudo -S apt-get remove -y rsync
