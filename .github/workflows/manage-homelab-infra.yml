@@ -68,7 +68,7 @@ jobs:
             
             echo "SSH OK. Entering WSL..."
             
-            wsl bash -c '
+            wsl bash << 'EOF_WSL'
               cd ./HomeLabK8sProjectFiles/homelab-infra
 
               # 1. Defining the variable without spaces
@@ -98,21 +98,23 @@ jobs:
               # 4. Applying the actual effects
               ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK 
 
-              # Removing the directory to prevent leak 
+              echo "Waiting for cluster initialization..."
+              sleep 120
+
+              # 5. Checking k3s state
+              export KUBECONFIG="$HOME/kubeconfig/homelab.yaml"
+              
+              # Replacing the loopback IP with the actual host IP safely using double quotes
+              sed -i "s/127.0.0.1/${ANSIBLE_HOST}/" "$KUBECONFIG"
+              
+              echo "Checking cluster nodes status..."
+              kubectl get nodes
+
+              # 6. Removing the directory to prevent leak 
               cd ..
               rm -rf homelab-infra
-            '
+            EOF_WSL
           EOF_SSH
-
-      - name:  Check k3s nodes
-        run: |
-          sleep 120
-
-          export KUBECONFIG=~/homelab-infra/kubeconfig/homelab.yaml
-
-          sed -i 's/127.0.0.1/${ env.ANSIBLE_HOST }/' kubeconfig/homelab.yaml
-          
-          kubectl get nodes
 
       - name: Uninstalling Rsync
         run: |
