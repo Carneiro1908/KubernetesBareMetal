@@ -110,11 +110,9 @@ jobs:
 
             echo "Selected playbook: \$PLAYBOOK"
 
-            # 1. Dry-run first (Check Mode) to catch errors before touching anything
-            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/\$PLAYBOOK "ansible_become_password=${{ secrets.REMOTE_VM_SUDO_PASSWORD }}" --check
+            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK --extra-vars "ansible_become_password=${{ secrets.REMOTE_SUDO_PASSWORD }}" --check
 
-            # 2. Apply for real
-            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/\$PLAYBOOK "ansible_become_password=${{ secrets.REMOTE_VM_SUDO_PASSWORD }}"
+            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK --extra-vars "ansible_become_password=${{ secrets.REMOTE_SUDO_PASSWORD }}"
 
             # 3. Only wait for / validate the cluster on "apply" — on
             # "destroy" there is no cluster left to check
