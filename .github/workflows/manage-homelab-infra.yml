@@ -64,36 +64,7 @@ jobs:
             rsync -avzP -e "ssh -i ~/.ssh/github_actions_ssh_key -o StrictHostKeyChecking=no" \
               ./homelab-infra "$ANSIBLE_USER@$ANSIBLE_HOST":HomeLabK8sProjectFiles
 
-      - name: Render inventory with real values (resolved remotely, inside WSL)
-        run: |
-          # ANSIBLE_HOST comes from the runner's secrets and must be expanded
-          # HERE (unquoted heredoc), before sending the script over SSH.
-          # Everything else that must be resolved on the REMOTE (WSL) side —
-          # like $(whoami) and $HOME, which give the real Linux user and home
-          # path inside WSL — is escaped with a backslash so it survives the
-          # trip and only gets evaluated once it lands on the remote shell.
-          ssh -i ~/.ssh/github_actions_ssh_key \
-            -o StrictHostKeyChecking=no \
-            "$ANSIBLE_USER@$ANSIBLE_HOST" wsl bash << EOF_SSH
-            set -euo pipefail
-            cd ./HomeLabK8sProjectFiles/homelab-infra
-
-            cat > inventory/hosts.yml << INNER_EOF
-          all:
-            children:
-              k8s_nodes:
-                hosts:
-                  homelab-server:
-                    ansible_host: "$ANSIBLE_HOST"
-                    ansible_user: "\$(whoami)"
-                    ansible_ssh_private_key_file: "\$HOME/.ssh/homelab_k8s"
-          INNER_EOF
-
-            echo "=== Generated inventory (sanity check) ==="
-            cat inventory/hosts.yml
-          EOF_SSH
-
-      - name: Debug inventory and connectivity (optional)
+      - name: Debug inventory and local execution (optional)
         if: ${{ inputs.debug == true }}
         run: |
           ssh -i ~/.ssh/github_actions_ssh_key \
@@ -102,16 +73,10 @@ jobs:
             set -euo pipefail
             cd ./HomeLabK8sProjectFiles/homelab-infra
 
-            echo "=== Raw bytes check (look for 0d = CR, would mean CRLF) ==="
-            xxd inventory/hosts.yml | grep "0d 0a" || echo "No CRLF found (good)"
-
-            echo "=== Visual check for ^M (CRLF marker) ==="
-            cat -A inventory/hosts.yml
-
             echo "=== Ansible inventory parsing check ==="
             ANSIBLE_CONFIG=./ansible.cfg ansible-inventory -i inventory/hosts.yml --list
 
-            echo "=== Ansible connectivity check (verbose) ==="
+            echo "=== Ansible local connectivity check ==="
             ANSIBLE_CONFIG=./ansible.cfg ansible -i inventory/hosts.yml k8s_nodes -m ping -vvv
           EOF_SSH
 
