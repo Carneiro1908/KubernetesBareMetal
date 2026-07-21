@@ -54,6 +54,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y rsync
 
+      - name: Installing kube core collection
+        run: |
+          ansible-galaxy collection install kubernetes.core
+          pip install kubernetes pyyaml --break-system-packages
+
       - name: Sending homelab-infra to the target VM
         uses: nick-fields/retry@v3
         with:
@@ -119,10 +124,10 @@ jobs:
             mkdir -p ./kubeconfig
 
             # Validating the playbook
-            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK --check
+            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK -vvv --check
 
             # Applying the playbook
-            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK
+            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK -vvv
 
             # Only wait for / validate the cluster on "apply"
             export KUBECONFIG="$(pwd)/kubeconfig/homelab.yaml"
