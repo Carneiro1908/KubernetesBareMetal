@@ -91,7 +91,7 @@ jobs:
 
             echo "SSH OK. Inside WSL directly as root..."
             
-            cd ~/HomeLabK8sProjectFiles/homelab-infra
+            cd /mnt/c/Users/sshuser/HomeLabK8sProjectFiles/homelab-infra
 
             REMOTE_SUDO_PASSWORD="${{ secrets.REMOTE_SUDO_PASSWORD }}"
             ACTION="${{ github.event.inputs.k3s_action }}"
