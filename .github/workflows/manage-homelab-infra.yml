@@ -125,23 +125,17 @@ jobs:
             ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK
 
             # Only wait for / validate the cluster on "apply"
-            if [ "$ACTION" = "apply" ]; then
-              echo "Waiting for cluster initialization..."
-              sleep 120
+            export KUBECONFIG="$(pwd)/kubeconfig/homelab.yaml"
 
-              export KUBECONFIG="$(pwd)/kubeconfig/homelab.yaml"
+            ls -la ./kubeconfig/
 
-              if [ -f "$KUBECONFIG" ]; then
-                sed -i "s/127.0.0.1/$TARGET_IP/" "$KUBECONFIG"
-
-                echo "Checking cluster nodes status..."
-                kubectl get nodes --kubeconfig="$KUBECONFIG"
-              else
-                echo "ERROR: Kubeconfig file not found at $KUBECONFIG"
-                exit 1
-              fi
+            if [ -f "$KUBECONFIG" ]; then
+              sed -i "s/127.0.0.1/$TARGET_IP/" "$KUBECONFIG"
+              echo "Checking cluster nodes status..."
+              kubectl get nodes --kubeconfig="$KUBECONFIG"
             else
-              echo "Destroy complete, skipping cluster validation."
+              echo "ERROR: Kubeconfig file not found at $KUBECONFIG"
+              exit 1
             fi
 
             # Cleanup

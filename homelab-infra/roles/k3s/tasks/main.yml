@@ -23,12 +23,12 @@
   delegate_to: localhost
   become: false
   file:
-    path: ./kubeconfig
+    path: "{{ playbook_dir }}/../kubeconfig"
     state: directory
     mode: '0755'
 
 - name: Searchs node kubeconfig 
   fetch:
     src: /etc/rancher/k3s/k3s.yaml
-    dest: ./kubeconfig/homelab.yaml
+    dest: "{{ playbook_dir }}/../kubeconfig/homelab.yaml"
     flat: yes
