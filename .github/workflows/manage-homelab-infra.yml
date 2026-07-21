@@ -127,18 +127,24 @@ jobs:
             # Only wait for / validate the cluster on "apply"
             export KUBECONFIG="$(pwd)/kubeconfig/homelab.yaml"
 
-            ls -la ./kubeconfig/
+            if [ "$ACTION" = "apply" ]; then
+              echo "Waiting for cluster initialization..."
+              sleep 60
 
-            if [ -f "$KUBECONFIG" ]; then
-              sed -i "s/127.0.0.1/localhost/" "$KUBECONFIG"
-              echo "Checking cluster nodes status..."
-              kubectl get nodes --kubeconfig="$KUBECONFIG"
+              export KUBECONFIG="$(pwd)/kubeconfig/homelab.yaml"
+
+              if [ -f "$KUBECONFIG" ]; then
+                sed -i "s/127.0.0.1/$TARGET_IP/" "$KUBECONFIG"
+                echo "Checking cluster nodes status..."
+                kubectl get nodes --kubeconfig="$KUBECONFIG"
+              else
+                echo "ERROR: Kubeconfig file not found at $KUBECONFIG"
+                exit 1
+              fi
             else
-              echo "ERROR: Kubeconfig file not found at $KUBECONFIG"
-              exit 1
+              echo "Destroy complete successfully! Skipping cluster validation."
             fi
-
-            # Cleanup
+                      # Cleanup
             cd ~
             rm -rf HomeLabK8sProjectFiles
           EOF_SSH
