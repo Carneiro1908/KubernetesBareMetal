@@ -130,7 +130,7 @@ jobs:
             ls -la ./kubeconfig/
 
             if [ -f "$KUBECONFIG" ]; then
-              sed -i "s/127.0.0.1/$TARGET_IP/" "$KUBECONFIG"
+              sed -i "s/127.0.0.1/localhost/" "$KUBECONFIG"
               echo "Checking cluster nodes status..."
               kubectl get nodes --kubeconfig="$KUBECONFIG"
             else
