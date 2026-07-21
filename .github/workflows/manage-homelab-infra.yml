@@ -82,16 +82,17 @@ jobs:
 
       - name: Execute Ansible Playbook via SSH and WSL
         run: |
-          # 1. Comando SSH limpo
           ssh -i ~/.ssh/github_actions_ssh_key \
             -o StrictHostKeyChecking=no \
-            "${{ env.ANSIBLE_USER }}@${{ env.ANSIBLE_HOST }}" wsl bash <<'EOF_SSH'
+            "${{ env.ANSIBLE_USER }}@${{ env.ANSIBLE_HOST }}" \
+            "wsl -u root -- bash -s" <<'EOF_SSH'
+
             set -euo pipefail
 
-            echo "SSH OK. Inside WSL directly..."
-            cd ./HomeLabK8sProjectFiles/homelab-infra
+            echo "SSH OK. Inside WSL directly as root..."
+            
+            cd ~/HomeLabK8sProjectFiles/homelab-infra
 
-            # 2. Injetando valores do GitHub diretamente com aspas seguras
             REMOTE_SUDO_PASSWORD="${{ secrets.REMOTE_SUDO_PASSWORD }}"
             ACTION="${{ github.event.inputs.k3s_action }}"
             TARGET_IP="${{ env.ANSIBLE_HOST }}"
@@ -111,33 +112,36 @@ jobs:
 
             echo "Selected playbook: $PLAYBOOK"
 
-            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml "playbooks/${PLAYBOOK}" \
-              --extra-vars "ansible_become_pass=$REMOTE_SUDO_PASSWORD" \
-              --extra-vars "ansible_become_method=sudo" \
-              --extra-vars "ansible_become_user=root" \
-              --check
+            # Testing connectivity
+            ansible all -m ping -i inventory/hosts.yml
 
-            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml "playbooks/${PLAYBOOK}" \
-              --extra-vars "ansible_become_pass=$REMOTE_SUDO_PASSWORD" \
-              --extra-vars "ansible_become_method=sudo" \
-              --extra-vars "ansible_become_user=root"
+            # Validating the playbook
+            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK --check
 
-            # 3. Only wait for / validate the cluster on "apply"
+            # Applying the playbook
+            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK
+
+            # Only wait for / validate the cluster on "apply"
             if [ "$ACTION" = "apply" ]; then
               echo "Waiting for cluster initialization..."
               sleep 120
 
-              export KUBECONFIG="$HOME/kubeconfig/homelab.yaml"
-              # Substituindo pelo IP alvo de forma segura
-              sed -i "s/127.0.0.1/$TARGET_IP/" "$KUBECONFIG"
+              export KUBECONFIG="$(pwd)/kubeconfig/homelab.yaml"
 
-              echo "Checking cluster nodes status..."
-              kubectl get nodes
+              if [ -f "$KUBECONFIG" ]; then
+                sed -i "s/127.0.0.1/$TARGET_IP/" "$KUBECONFIG"
+
+                echo "Checking cluster nodes status..."
+                kubectl get nodes --kubeconfig="$KUBECONFIG"
+              else
+                echo "ERROR: Kubeconfig file not found at $KUBECONFIG"
+                exit 1
+              fi
             else
               echo "Destroy complete, skipping cluster validation."
             fi
 
-            # 4. Remove the project directory safely (Voltando para a raiz)
+            # Cleanup
             cd ~
             rm -rf HomeLabK8sProjectFiles
           EOF_SSH
