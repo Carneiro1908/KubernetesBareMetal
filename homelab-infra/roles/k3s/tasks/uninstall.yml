@@ -1,19 +1,30 @@
 ---
-- name: Verify if the uninstalling script of k3s exists
-  stat:
-    path: /usr/local/bin/k3s-uninstall.sh
-  register: k3s_uninstall_script
-
 - name: Run oficial uninstaller of k3s
+  command: /usr/local/bin/k3s-killall.sh
+  ignore_errors: true
+
+- name: Run k3s-uninstall.sh if exists
   command: /usr/local/bin/k3s-uninstall.sh
-  when: k3s_uninstall_script.stat.exists
+  args:
+    removes: /usr/local/bin/k3s-uninstall.sh
+  ignore_errors: true
+
+# --- PASSO NOVO: Desmonta qualquer volume pendente no /var/lib/kubelet ---
+- name: Unmount active kubelet mounts
+  shell: |
+    if mountpoint -q /var/lib/kubelet || grep -q '/var/lib/kubelet' /proc/mounts; then
+      umount -f -l $(grep '/var/lib/kubelet' /proc/mounts | awk '{print $2}') || true
+    fi
+  args:
+    executable: /bin/bash
+  ignore_errors: true
 
 - name: Remove local kubeconfig (if exists)
-  file:
-    path: ./kubeconfig/homelab.yaml
-    state: absent
   delegate_to: localhost
   become: false
+  file:
+    path: "{{ playbook_dir }}/../kubeconfig/homelab.yaml"
+    state: absent
 
 - name: Clear trash directories of k3s
   file:
