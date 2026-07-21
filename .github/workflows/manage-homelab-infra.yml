@@ -134,10 +134,8 @@ jobs:
               export KUBECONFIG="$(pwd)/kubeconfig/homelab.yaml"
 
               if [ -f "$KUBECONFIG" ]; then
-                sed -i "s/127.0.0.1/$TARGET_IP/" "$KUBECONFIG"
                 echo "Checking cluster nodes status..."
-
-
+                
                 echo "nodes"
                 kubectl get nodes --kubeconfig="$KUBECONFIG"
 
