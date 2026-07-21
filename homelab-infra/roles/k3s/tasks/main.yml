@@ -19,6 +19,14 @@
     state: present
     timeout: 120
 
+- name: Ensure local kubeconfig directory exists
+  delegate_to: localhost
+  become: false
+  file:
+    path: ./kubeconfig
+    state: directory
+    mode: '0755'
+
 - name: Searchs node kubeconfig 
   fetch:
     src: /etc/rancher/k3s/k3s.yaml

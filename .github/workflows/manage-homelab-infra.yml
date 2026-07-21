@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       k3s_action:
-        description: "The action to run against the cluster"
+        description: "The action to run targeting the cluster"
         required: true
         default: 'apply'
         type: choice
@@ -114,6 +114,9 @@ jobs:
 
             # Testing connectivity
             ansible all -m ping -i inventory/hosts.yml
+
+            # Creating local directory for store the kube configurations & stats
+            mkdir -p ./kubeconfig
 
             # Validating the playbook
             ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK --check
