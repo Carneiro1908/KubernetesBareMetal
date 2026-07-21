@@ -54,11 +54,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y rsync
 
-      - name: Installing kube core collection
-        run: |
-          ansible-galaxy collection install kubernetes.core
-          pip install kubernetes pyyaml --break-system-packages
-
       - name: Sending homelab-infra to the target VM
         uses: nick-fields/retry@v3
         with:
@@ -91,6 +86,9 @@ jobs:
             -o StrictHostKeyChecking=no \
             "${{ env.ANSIBLE_USER }}@${{ env.ANSIBLE_HOST }}" \
             "wsl -u root -- bash -s" <<'EOF_SSH'
+
+            # Installing kube core collection
+            ansible-galaxy collection install kubernetes.core ; pip install kubernetes pyyaml --break-system-packages
 
             set -euo pipefail
 
