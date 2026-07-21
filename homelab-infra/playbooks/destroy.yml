@@ -18,3 +18,14 @@
     - name: Renable swap
       command: swapon -a
       ignore_errors: true  # can fail if has no swap partition/file configured
+
+    - name: Uninstall monitoring stack
+      import_role:
+        name: monitoring
+        tasks_from: uninstall
+      ignore_errors: true
+
+    - name: Uninstall k3s
+      import_role:
+        name: k3s
+        tasks_from: uninstall

@@ -1,3 +1,4 @@
 ---
 - import_playbook: 01-prereqs.yml
 - import_playbook: 02-k3s-install.yml
+- import_playbook: 03-monitoring-install.yml

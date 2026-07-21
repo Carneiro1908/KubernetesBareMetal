@@ -1,0 +1,17 @@
+---
+- name: Uninstall monitoring helm release
+  kubernetes.core.helm:
+    name: monitoring
+    release_namespace: "{{ monitoring_namespace }}"
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+    state: absent
+  ignore_errors: true
+
+- name: Remove monitoring namespace
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: "{{ monitoring_namespace }}"
+    state: absent
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+  ignore_errors: true

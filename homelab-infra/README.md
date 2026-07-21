@@ -5,3 +5,5 @@ And for the workflow works normaly, you must have an already configured SSH key 
 
 I am using a self-hosted workflow because it is more practical to access my LAN, however, depending of your 
 goal/environment, adapt it for your needs
+
+The grafana data is avaible in http://localhost:30300 of the VM, user is "admin" and the password is the one grafana_password("mypassword123")

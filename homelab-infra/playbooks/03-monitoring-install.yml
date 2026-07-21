@@ -1,0 +1,6 @@
+---
+- name: Install observability stack (Prometheus + Grafana)
+  hosts: k3s_nodes
+  become: true
+  roles:
+    - monitoring

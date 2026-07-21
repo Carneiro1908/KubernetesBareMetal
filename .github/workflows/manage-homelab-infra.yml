@@ -136,7 +136,13 @@ jobs:
               if [ -f "$KUBECONFIG" ]; then
                 sed -i "s/127.0.0.1/$TARGET_IP/" "$KUBECONFIG"
                 echo "Checking cluster nodes status..."
+
+
+                echo "nodes"
                 kubectl get nodes --kubeconfig="$KUBECONFIG"
+
+                echo "pods stats"
+                kubectl get pods -n monitoring
               else
                 echo "ERROR: Kubeconfig file not found at $KUBECONFIG"
                 exit 1
