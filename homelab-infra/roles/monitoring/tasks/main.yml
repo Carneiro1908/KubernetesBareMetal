@@ -34,6 +34,7 @@
           enabled: true
           storageClassName: local-path
           size: 1Gi
+     
       prometheus:
         prometheusSpec:
           storageSpec:
@@ -52,3 +53,7 @@
                 resources:
                   requests:
                     storage: 1Gi
+
+      prometheus-node-exporter:
+        hostRootFsMount:
+          enabled: false

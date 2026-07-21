@@ -121,8 +121,9 @@ jobs:
             # Creating local directory for store the kube configurations & stats
             mkdir -p ./kubeconfig
 
-            # Validating the playbook
-            #ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK -vvv --check
+            # Validating the playbook 
+            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK -vvv --check || true 
+            # There are things that only give error in --check so its better to keep running even after it give errors
 
             # Applying the playbook
             ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK -vvv
