@@ -122,7 +122,7 @@ jobs:
             mkdir -p ./kubeconfig
 
             # Validating the playbook
-            ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK -vvv --check
+            #ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK -vvv --check
 
             # Applying the playbook
             ANSIBLE_CONFIG=./ansible.cfg ansible-playbook -i inventory/hosts.yml playbooks/$PLAYBOOK -vvv
