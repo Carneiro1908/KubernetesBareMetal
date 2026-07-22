@@ -13,7 +13,7 @@ def run_tests():
     
     # Start the FastAPI server in the background
     server_process = subprocess.Popen(
-        [sys.executable, "server.py"],
+        ["python", "server.py"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         preexec_fn=os.setsid if hasattr(os, 'setsid') else None # Clean process termination on Unix
@@ -79,17 +79,8 @@ def run_tests():
             assert "Food" in stats["categories"]
             print("PASSED ✅")
 
-        # Test 5: Retrieve metrics endpoint for Prometheus
-        print("Test 5: Requesting GET /metrics ...", end=" ")
-        req = urllib.request.Request(f"{SERVER_URL}/metrics")
-        with urllib.request.urlopen(req) as res:
-            assert res.status == 200
-            metrics_body = res.read().decode('utf-8')
-            assert "http_requests_total" in metrics_body
-            print("PASSED ✅")
-
-        # Test 6: Delete the newly created transaction
-        print(f"Test 6: Requesting DELETE /api/transactions?id={new_transaction_id} ...", end=" ")
+        # Test 5: Delete the newly created transaction
+        print(f"Test 5: Requesting DELETE /api/transactions?id={new_transaction_id} ...", end=" ")
         req = urllib.request.Request(
             f"{SERVER_URL}/api/transactions?id={new_transaction_id}",
             method="DELETE"
@@ -100,7 +91,7 @@ def run_tests():
             assert resp_body["success"] is True
             print("PASSED ✅")
 
-        print("\n🎉 All 6 API integration tests passed successfully! 🎉")
+        print("\n🎉 All 5 API integration tests passed successfully! 🎉")
         
     except Exception as e:
         print(f"FAILED ❌")

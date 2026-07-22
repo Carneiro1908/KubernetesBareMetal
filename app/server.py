@@ -1,11 +1,9 @@
 import os
-import time
 from typing import Optional
-from fastapi import FastAPI, Query, HTTPException, Request, Response, status
+from fastapi import FastAPI, Query, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from prometheus_client import CONTENT_TYPE_LATEST, CollectorRegistry, Counter, Histogram, generate_latest
 
 import database
 
@@ -17,42 +15,6 @@ app = FastAPI(
     description="Professional Budget Management API",
     version="1.0.0"
 )
-
-METRICS_REGISTRY = CollectorRegistry(auto_describe=True)
-REQUEST_COUNT = Counter(
-    "http_requests_total",
-    "Total HTTP requests",
-    labelnames=["method", "endpoint", "status_code"],
-    registry=METRICS_REGISTRY,
-)
-REQUEST_LATENCY = Histogram(
-    "http_request_duration_seconds",
-    "HTTP request latency in seconds",
-    labelnames=["method", "endpoint"],
-    registry=METRICS_REGISTRY,
-)
-
-@app.middleware("http")
-async def metrics_middleware(request: Request, call_next):
-    start_time = time.perf_counter()
-    try:
-        response = await call_next(request)
-    except Exception:
-        REQUEST_COUNT.labels(method=request.method, endpoint=request.url.path, status_code="500").inc()
-        REQUEST_LATENCY.labels(method=request.method, endpoint=request.url.path).observe(time.perf_counter() - start_time)
-        raise
-
-    REQUEST_COUNT.labels(method=request.method, endpoint=request.url.path, status_code=str(response.status_code)).inc()
-    REQUEST_LATENCY.labels(method=request.method, endpoint=request.url.path).observe(time.perf_counter() - start_time)
-    return response
-
-@app.get("/metrics")
-def metrics() -> Response:
-    return Response(generate_latest(METRICS_REGISTRY), media_type=CONTENT_TYPE_LATEST)
-
-@app.get("/healthz")
-def healthz() -> dict:
-    return {"status": "ok"}
 
 # Enable CORS for development flexibility
 app.add_middleware(
@@ -207,4 +169,5 @@ else:
 if __name__ == "__main__":
     import uvicorn
     PORT = int(os.environ.get("PORT", 8000))
-    uvicorn.run("server:app", host="0.0.0.0", port=PORT, reload=False)
+    # In production, use workers and avoid reload=True
+    uvicorn.run("server:app", host="0.0.0.0", port=PORT, reload=True)
