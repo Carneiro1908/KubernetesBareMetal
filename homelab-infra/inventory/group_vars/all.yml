@@ -8,3 +8,6 @@ grafana_node_port: 30300
 # In an company environment always hide it, hiding this variable is not necessary, as it isn't a sentive data
 # To hide it the usual way is to encrypt using for example: ansible-vault encrypt_string 'mypassword123' --name 'grafana_admin_password'
 grafana_admin_password: "mypassword123" 
+
+argocd_version: "v2.10.0" 
+argocd_namespace: "argocd"

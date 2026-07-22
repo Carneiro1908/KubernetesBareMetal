@@ -24,6 +24,12 @@
         name: monitoring
         tasks_from: uninstall
       ignore_errors: true
+    
+    - name: Uninstall GitOps
+      import_role:
+        name: gitops
+        tasks_from: uninstall
+      ignore_errors: true
 
     - name: Uninstall k3s
       import_role:

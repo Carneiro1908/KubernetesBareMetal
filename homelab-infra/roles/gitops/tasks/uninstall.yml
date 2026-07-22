@@ -1,0 +1,20 @@
+---
+- name: Uninstall Argo CD Application
+  kubernetes.core.k8s:
+    state: absent
+    api_version: argoproj.io/v1alpha1
+    kind: Application
+    name: MyApp
+    namespace: "{{ argocd_namespace }}"
+
+- name: Remover os manifestos do Argo CD
+  kubernetes.core.k8s:
+    state: absent
+    src: "https://raw.githubusercontent.com/argoproj/argo-cd/v2.10.0/manifests/install.yaml"
+
+- name: Remove Argo CD Namespace 
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Namespace
+    name: "{{ argocd_namespace }}"

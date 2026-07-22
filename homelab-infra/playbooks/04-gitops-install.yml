@@ -1,0 +1,6 @@
+---
+- name: Install & Configure GitOps
+  hosts: k3s_nodes
+  become: true
+  roles:
+    - gitops
