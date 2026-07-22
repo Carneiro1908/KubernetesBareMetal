@@ -1,6 +1,6 @@
-# Antigravity Finance - Premium Budget Manager
+#  Finance Premium Budget Manager
 
-Antigravity Finance is a professional-grade, high-performance budget management web application. It features a modern **FastAPI** backend in Python, a premium **Glassmorphic UI Dashboard** (built with responsive Vanilla HTML, CSS, and JS), and a dynamic database layer powered by **SQLAlchemy** supporting both **SQLite** and **PostgreSQL**.
+ Finance is a professional-grade, high-performance budget management web application. It features a modern **FastAPI** backend in Python, a premium **Glassmorphic UI Dashboard** (built with responsive Vanilla HTML, CSS, and JS), and a dynamic database layer powered by **SQLAlchemy** supporting both **SQLite** and **PostgreSQL**.
 
 ---
 
