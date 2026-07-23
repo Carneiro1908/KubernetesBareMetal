@@ -1,0 +1,28 @@
+name: Build App
+
+on: 
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build_app: 
+    runs-on: ubuntu-lastest
+    
+    env:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: $DOCKER_USERNAME
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build
+        working-directory: ./app
+        run: docker build -t $DOCKER_USERNAME/app:v1.${{ github.run_number }} .
+
+      - name: Push
+        run: docker push $DOCKER_USERNAME/app:v1.${{ github.run_number }}
