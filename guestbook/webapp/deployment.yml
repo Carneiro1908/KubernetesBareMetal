@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: webapp
-          image: seu-usuario/finance-web-app:v1   # <- imagem que você fez push
+          image: Carneiro1908/app:v1   # <- imagem que você fez push
           ports:
             - containerPort: 8000
           env:

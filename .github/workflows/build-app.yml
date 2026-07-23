@@ -22,7 +22,7 @@ jobs:
 
       - name: Build
         working-directory: ./app
-        run: docker build -t $DOCKER_USERNAME/app:v1.${{ github.run_number }} .
+        run: docker build -t $DOCKER_USERNAME/app:v1 .
 
       - name: Push
-        run: docker push $DOCKER_USERNAME/app:v1.${{ github.run_number }}
+        run: docker push $DOCKER_USERNAME/app:v1
