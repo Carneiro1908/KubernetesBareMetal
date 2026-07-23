@@ -8,9 +8,9 @@
 
 - name: Apply manifestsof Argo CD instalation
   kubernetes.core.k8s:
-        state: present
-        namespace: "{{ argocd_namespace }}"
-        src: "https://raw.githubusercontent.com/argoproj/argo-cd/{{ argocd_version }}/manifests/install.yaml"
+    state: present
+    namespace: "{{ argocd_namespace }}"
+    src: "https://raw.githubusercontent.com/argoproj/argo-cd/{{ argocd_version }}/manifests/install.yaml"
 
 - name: Wait Argo CD server instalation finish
   kubernetes.core.k8s_info:
@@ -33,7 +33,7 @@
       apiVersion: argoproj.io/v1alpha1
       kind: Application
       metadata:
-        name: MyApp
+        name: myapp
         namespace: "{{ argocd_namespace }}"
       spec:
         project: default

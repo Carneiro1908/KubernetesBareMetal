@@ -4,7 +4,7 @@
     state: absent
     api_version: argoproj.io/v1alpha1
     kind: Application
-    name: MyApp
+    name: myapp
     namespace: "{{ argocd_namespace }}"
 
 - name: Remover os manifestos do Argo CD

@@ -11,7 +11,7 @@ import database
 database.init_db()
 
 app = FastAPI(
-    title="Antigravity Finance API",
+    title="Finance API",
     description="Professional Budget Management API",
     version="1.0.0"
 )
