@@ -1,19 +1,22 @@
 ---
 - name: Grants Argo CD namespace exists 
-  kubernetes.core.k8s:
+  kubernetes.core.k3s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
     name: "{{ argocd_namespace }}"
     api_version: v1
     kind: Namespace
     state: present
 
 - name: Apply manifestsof Argo CD instalation
-  kubernetes.core.k8s:
+  kubernetes.core.k3s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
     state: present
     namespace: "{{ argocd_namespace }}"
     src: "https://raw.githubusercontent.com/argoproj/argo-cd/{{ argocd_version }}/manifests/install.yaml"
 
 - name: Wait Argo CD server instalation finish
-  kubernetes.core.k8s_info:
+  kubernetes.core.k3s_info:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
     kind: Deployment
     name: argocd-server
     namespace: "{{ argocd_namespace }}"
@@ -27,7 +30,8 @@
   delay: 10
 
 - name: Creates a Application in Argo CD using Definition Inline
-  kubernetes.core.k8s:
+  kubernetes.core.k3s:
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
     state: present
     definition:
       apiVersion: argoproj.io/v1alpha1
