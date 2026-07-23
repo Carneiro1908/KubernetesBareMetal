@@ -14,8 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      IMAGE_REPOSITORY: ${{ secrets.DOCKER_USERNAME }}/app
+      IMAGE_REPOSITORY: carneiro1908/app
 
     steps:
       - name: Checkout code
@@ -24,7 +23,7 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
+          username: carneiro1908
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Set image tag
