@@ -3,7 +3,7 @@ name: Build App
 on: 
   push:
     branches:
-      - main
+      # Disabling main for tests now
       - master
 
 jobs:
