@@ -7,6 +7,8 @@ from pydantic import BaseModel, Field
 
 import database
 
+print("triggering Argo CD")
+
 # Initialize Database on startup
 database.init_db()
 
