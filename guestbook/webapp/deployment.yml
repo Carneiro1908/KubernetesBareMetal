@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: webapp
-          image: REPLACE_ME_WITH_IMAGE
+          image: carneiro1908/app:sha-cb5c4822ad4f
           ports:
             - containerPort: 8000
           env:
