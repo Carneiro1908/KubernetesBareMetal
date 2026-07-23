@@ -37,7 +37,7 @@ class TransactionCreate(BaseModel):
     model_config = {
         "json_schema_extra": {
             "example": {
-                "description": "Weekly Grocery Shopping",
+                "description": "Grocery Shopping",
                 "amount": 124.50,
                 "type": "expense",
                 "category": "Food",
